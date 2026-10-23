@@ -1,65 +1,16 @@
-import json
-from pathlib import Path
-
 import httpx
+from conftest import (
+    RIPE_HOLDER,
+    RIPE_IPV4,
+    RIPE_IPV6,
+    FakeRipestat,
+    as_overview,
+    network_info,
+    ripe_routes,
+)
 
-from soevscan.lookups.asn import AsnLookup, make_http_client
+from soevscan.lookups.asn import make_http_client
 from soevscan.lookups.models import AsnEntry, LookupStatus
-
-FIXTURES = Path(__file__).parent / "fixtures"
-
-RIPE_IPV4 = "193.0.6.139"
-RIPE_IPV6 = "2001:67c:2e8:22::c100:68b"
-RIPE_HOLDER = "RIPE-NCC-AS Reseaux IP Europeens Network Coordination Centre (RIPE NCC)"
-
-Route = httpx.Response | Exception
-
-
-def fixture(name: str) -> httpx.Response:
-    """A response with the body of a fixture captured from the real RIPEstat API."""
-    return httpx.Response(200, json=json.loads((FIXTURES / name).read_text()))
-
-
-def network_info(asns: list[str], prefix: str = "198.51.100.0/24") -> httpx.Response:
-    return httpx.Response(200, json={"status": "ok", "data": {"asns": asns, "prefix": prefix}})
-
-
-def as_overview(holder: str | None) -> httpx.Response:
-    return httpx.Response(200, json={"status": "ok", "data": {"holder": holder}})
-
-
-class FakeRipestat:
-    """A MockTransport that answers by ``(data call, resource)`` and records every request.
-
-    A route is a response or an exception to raise. A request without a route fails the test.
-    """
-
-    def __init__(self, routes: dict[tuple[str, str], Route]) -> None:
-        self.routes = routes
-        self.requests: list[httpx.Request] = []
-
-    def handle(self, request: httpx.Request) -> httpx.Response:
-        self.requests.append(request)
-        call = request.url.path.split("/")[2]  # /data/<call>/data.json
-        route = self.routes[(call, request.url.params["resource"])]
-        if isinstance(route, Exception):
-            raise route
-        return route
-
-    def lookup(self, sourceapp: str = "soevscan") -> AsnLookup:
-        return AsnLookup(httpx.Client(transport=httpx.MockTransport(self.handle)), sourceapp)
-
-    def count(self, call: str) -> int:
-        return sum(1 for r in self.requests if r.url.path == f"/data/{call}/data.json")
-
-
-def ripe_routes() -> dict[tuple[str, str], Route]:
-    return {
-        ("network-info", RIPE_IPV4): fixture("network_info_193.0.6.139.json"),
-        ("network-info", RIPE_IPV6): fixture("network_info_2001_67c_2e8_22__c100_68b.json"),
-        ("as-overview", "AS3333"): fixture("as_overview_AS3333.json"),
-    }
-
 
 # --- successful lookups ---
 
