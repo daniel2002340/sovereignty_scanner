@@ -9,6 +9,18 @@ Licensed under the [EUPL-1.2](LICENSE).
 
 **Status: work in progress.**
 
+## Usage
+
+```sh
+uv run soevscan nlnet.nl                          # short summary
+uv run soevscan nlnet.nl --json                   # full result as JSON
+uv run soevscan nlnet.nl --resolver 86.54.11.100  # use an unfiltered resolver (see below)
+```
+
+`--resolver` can be repeated. `--dns-timeout`, `--http-timeout` and `--sourceapp` are also
+available; see `soevscan --help`. The exit code is 0 whenever the scan ran, even if lookups
+failed (that is part of the result), and 2 for invalid input.
+
 ## Choosing a DNS resolver
 
 The resolver sees every name the scanner looks up, so `soevscan` never hardcodes one. By

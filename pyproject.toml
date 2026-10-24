@@ -15,6 +15,9 @@ dependencies = [
     "idna>=3.20",
 ]
 
+[project.scripts]
+soevscan = "soevscan.cli:main"
+
 [build-system]
 requires = ["uv_build>=0.10.3,<0.11.0"]
 build-backend = "uv_build"
